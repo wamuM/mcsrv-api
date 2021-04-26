@@ -1,3 +1,7 @@
+//! IMPORTANT
+//todo Change all the promise JSDoc comments
+
+
 /**
 * It tells you if the server is online (if you are going to request more data afterwards use {@link ApiData}'s .online attribute instead)
 * @param {String} ip The server's ip or domain name
@@ -27,7 +31,7 @@ function isOnline(ip){
 */
 function fetchData(ip){
     return Promise((resolve,reject)=>{
-         request(ip).then(response=>{
+         request("api.mcsrv.us/2/"+ip).then(response=>{//todo check if the link is correct
                switch(response.status.code){
                      case 500:
                      case 404:
