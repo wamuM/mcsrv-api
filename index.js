@@ -1,23 +1,22 @@
-//! IMPORTANT
 //todo Change all the promise JSDoc comments
-
+const https = require("https")
 
 /**
 * It tells you if the server is online (if you are going to request more data afterwards use {@link ApiData}'s .online attribute instead)
 * @param {String} ip The server's ip or domain name
 * @returns {Promise}
 * @resolve {Boolean} if the server is offline or the API is not accesible it will be false
-* @see api.mcsrv.us
+* @see api.mcsrvstat.us
 */
 
 function isOnline(ip){
    return new Promise((resolve,reject)=>{
-          request(ip).then((data)=>{
+          request("https://api.mcsrvstat.us/simple/"+ip).then((data)=>{
                 resolve(data.status.code==200)
           }).catch((err)=>{
                 resolve(false)
           });
-   }));   
+   });   
 }
 /**
 * It gives you a {@link ApiData} Object with the information of the specified MC server
@@ -27,18 +26,18 @@ function isOnline(ip){
 * @reject {Error<"Network Error">} The promise will throw a Network Error if there is a network problem 
 * @reject {Error<404>} The api couldn't find the server
 * @reject {Error<500>} The api failed 
-* @see api.mcsrv.us
+* @see api.mcsrvstat.us
 */
 function fetchData(ip){
-    return Promise((resolve,reject)=>{
-         request("api.mcsrv.us/2/"+ip).then(response=>{//todo check if the link is correct
+    return new Promise((resolve,reject)=>{
+         request("https://api.mcsrvstat.us/2/"+ip).then(response=>{//todo check if the link is correct
                switch(response.status.code){
                      case 500:
                      case 404:
-                           resolve(new Error(response.status.code)
+                           resolve(new Error(response.status.code));
                      break;
                      default:
-                           resolve(response.body) //todo Parse data
+                           resolve(JSON.parse(response.body)) //todo Parse data
                      break;
                }
          }).catch((err)=>{
@@ -48,24 +47,28 @@ function fetchData(ip){
 }
 /**
 * A cache is an object that is going to cache the request data
-* @param {String} ip The server's ip or domain name
-* @param {Number} ttlInMs The Time-To-Live in MS
-* @param {Boolean} [loadBackup] if a back up needs to be loaded when having an error at getting data (default is true)
-* @param {Boolean} [restartTTLWhenError] if the ttl countdown needs to be restarted when having an error at getting data
 * @see api.mcsrv.us
 */
-class MyCache{
+class McsrvstatCache{
+    /**
+     * 
+     * @param {String} ip The server's ip or domain name
+     * @param {Number} ttlInMs The Time-To-Live in MS
+     * @param {Boolean} [loadBackup] if a back up needs to be loaded when having an error at getting data (default is true)
+     * @param {Boolean} [restartTTLWhenError] if the ttl countdown needs to be restarted when having an error at getting data
+     */
     constructor(ip,ttlInMs,loadBackup,restartTTLWhenError){
         this.ip = ip;
         this.ttl = ttlInMs
         this.loadBackup = loadBackup || true;
         this.restart  = restartTTLWhenError || true;
         this.lastTime = Date.now()
-        try{
-            this.data = await fetchData(this.ip)
-        }catch(e){
-            this.data = e;
-        }
+        this.data = false;
+        fetchData(this.ip).then((data)=>{
+            this.data = data;
+        }).catch((err)=>{
+            this.data = err;
+        })
     }
     /**
     * Gets the data from the cache or fetchs it from the server if the ttl countdown end 
@@ -111,41 +114,53 @@ class MyCache{
          });
     }
 }
-function request(ip){
-    return Promise((resolve,reject)=>{
-        let xhr = new XMlHttpRequest()
-        xhr.open("GET",ip,true)
-        xhr.onload = ()=>{
-           var response = {
-               status:{
-                  code:xhr.status,
-                  text:xhr.statusText
-               },
-               body:xhr.response,
-               headers:{}
-           }
-           xhr.getAllHeaders().split("\r\n").forEach((h)=>{
-               var header = h.split(":")
-               response.headers[header[0]] = header[1]
-           })
-           resolve(response)
-        }
-        xhr.onerror = ()=>{
-           reject(new Error("Network Error"))
-        }
-        xhr.send(null)
+function request(url){
+    return new Promise((resolve,reject)=>{
+        https.get(url, (res) => {
+            let body = ""
+            res.on('data', (chunk) => {
+                body += chunk;
+            });
+            res.on("end",()=>{
+                var response = {
+                    status:{
+                        code:res.statusCode,
+                        message:res.statusMessage
+                    },
+                    body,
+                    headers:res.headers
+                }
+                resolve(response)
+            });
+        }).on('error', (e) => {
+            reject(e)
+        });
     })
 }
 /**
 * @typedef {Object} ApiResponse
-* @attribute {Number} status.code The HTTP Status Code
-* @attribute {String} status.text The HTTP Status Text
-* @attribute {String} body The requested {@link ApiData} without parsing
-* @attribute {Object} headers The HTTP headers
+* @property {Number} status.code The HTTP Status Code
+* @property {String} status.message The HTTP Status Message
+* @property {String} body The requested {@link ApiData} without parsing
+* @property {Object} headers The HTTP headers
 */
 
 /**
-* @typedef {Object} ApiData
+* More info about other properties requested to the API can be seen at the API's website@see api.mcsrvstat.us
+* @typedef {Object} ApiData 
+* @prop {Boolean} online if this is false no other attribute should be expected
+* @prop {String} ip The actual ip (if you used the domain name it will still return the ip)
+* @prop {Number} port The port
+* @prop {Object} debug Debug information
+* @prop {Object} motd motd information
+* @prop {Object} players Players information
+* @prop {Number} players.online The amount of players online
+* @prop {Number} players.max The max amount of players online
+* @prop {Array<String>} [players.list] A list of the online players usernames (only included if players.online != 0)
+* @prop {Object} players.uuid Asociates a uuid to each player, might not include all the players
+* @prop {String} version The server's version
+* @prop {Number} protocol The server's protocol number
+* @see api.mcsrvstat.us
 */
 
-module.exports = {Cache:MyCache, isOnline, fetchData, doHTTPRequest:request}
+module.exports = {Cache:McsrvstatCache, isOnline, fetchData, doHTTPRequest:request}

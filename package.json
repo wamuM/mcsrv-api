@@ -1,0 +1,22 @@
+{
+  "name": "mcsrvstat-api",
+  "version": "1.0.0",
+  "description": "An extension to use the mcsrvstat api",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wamuM/mcsrv-api.git"
+  },
+  "author": "wamuM",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/wamuM/mcsrv-api/issues"
+  },
+  "homepage": "https://github.com/wamuM/mcsrv-api#readme",
+  "dependencies": {
+    "https": "^1.0.0"
+  }
+}
