@@ -1,4 +1,3 @@
-//todo Change all the promise JSDoc comments
 const https = require("https")
 
 /**
@@ -46,7 +45,7 @@ function fetchData(ip){
     });
 }
 /**
-* A cache is an object that is going to cache the request data
+* A way to Cache ApiData
 * @see api.mcsrv.us
 */
 class McsrvstatCache{
@@ -55,7 +54,7 @@ class McsrvstatCache{
      * @param {String} ip The server's ip or domain name
      * @param {Number} ttlInMs The Time-To-Live in MS
      * @param {Boolean} [loadBackup] if a back up needs to be loaded when having an error at getting data (default is true)
-     * @param {Boolean} [restartTTLWhenError] if the ttl countdown needs to be restarted when having an error at getting data
+     * @param {Boolean} [restartTTLWhenError] if the ttl countdown needs to be restarted when having an error at getting data (default is true)
      */
     constructor(ip,ttlInMs,loadBackup,restartTTLWhenError){
         this.ip = ip;
